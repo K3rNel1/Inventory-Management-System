@@ -1,4 +1,3 @@
-
 ---
 
 # 📦 Inventory Tracking & Management System
