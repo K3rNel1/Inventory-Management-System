@@ -12,7 +12,7 @@ def main():
     conn = sqlite3.connect("Inventory.db")
     cursor = conn.cursor()
 
-    cursor.execute("CREATE TABLE IF NOT EXISTS register (bname TEXT NOT NULL, name TEXT PRIMARY KEY , mob INTEGER, doi TEXT NOT NULL, dor TEXT NOT NULL, rm TEXT )")
+    cursor.execute("CREATE TABLE IF NOT EXISTS register (bname TEXT NOT NULL, name TEXT PRIMARY KEY , mob INTEGER, doi TEXT NOT NULL, dor TEXT NOT NULL, rm TEXT )")                                                                               #Author : Github.com/K3rnel1
 
     st = int(input("\n1, Issue Book \n2, Access Register\n[1/2]: "))
 
