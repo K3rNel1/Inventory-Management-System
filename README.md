@@ -1,5 +1,3 @@
-
-
 # 📦 Inventory Tracking & Management System
 
 A simple and user-friendly system designed to manage assets, records, or resources efficiently using a local database.
@@ -34,6 +32,11 @@ This separation shows how the system can be adapted to different real-world use 
 * 📊 View issued items and transaction records
 * 🗄️ Data stored locally using a database
 * 🔐 Admin control to monitor and manage records
+* 🖥️ Graphical User Interface (GUI) for a modern experience
+* 🔍 Search & filtering functionality
+* 🔐 Authentication system for secure access
+* ⏰ Borrowing time notifications for due returns
+* 💬 WhatsApp notification option to alert users automatically
 
 ---
 
@@ -41,7 +44,15 @@ This separation shows how the system can be adapted to different real-world use 
 
 * **Language:** Python
 * **Database:** SQLite (local `.db` file)
-* **Interface:** CLI
+* **Interface:** CLI + GUI
+
+---
+
+## 📦 Application Release
+
+A fully functional **GUI-based executable (.exe)** version of this project is now available.
+
+👉 You can download it from the **Releases section** of this repository.
 
 ---
 
@@ -51,18 +62,21 @@ This separation shows how the system can be adapted to different real-world use 
 * Local database integration
 * Record tracking system
 * Admin-level control and monitoring
+* GUI integration with backend logic
 
 ---
 
 ## 🔮 Future Improvements
 
-* graphical user interface (GUI)
-* Implement search & filtering
-* authentication system
+* Cloud database integration
+* Advanced analytics dashboard
+* Email/SMS notification system
 
 ---
-## Author
-Ali Zubair Shah
 
-- GitHub: https://github.com/K3rNel1 
-- Linked In : https://www.linkedin.com/in/ali-zubair-shah-5640033a1/ 
+## 👨‍💻 Author
+
+**Ali Zubair Shah**
+
+* GitHub: https://github.com/K3rNel1
+* LinkedIn: https://www.linkedin.com/in/ali-zubair-shah-5640033a1/
