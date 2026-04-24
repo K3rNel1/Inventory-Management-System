@@ -6,30 +6,17 @@ import customtkinter as ctk
 import os
 import ctypes
 from datetime import datetime, timedelta
-
-# Hide the database file on Windows
-try:
-    os.system(f'attrib +h {DB_NAME}')
-except Exception:
-    pass
 from Backend import (
-
-    # auth
     is_first_run, create_user, verify_login, change_password, get_username,
-    # crud
-    issue_book, get_all_records, get_record, update_record, delete_record,
-    # duplicate handling
+    issue_book, get_all_records, get_record, get_record_by_id, update_record, update_record_by_id, delete_record,
     get_duplicate_records, delete_duplicate_records, delete_record_by_id,
-    # overdue + whatsapp
     get_overdue_records, is_overdue,
     generate_default_message, send_whatsapp_message,
 )
 
-# ─── Appearance ───────────────────────────────────────────────────────────────
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-# ─── Colour Palette ───────────────────────────────────────────────────────────
 BG_DARK        = "#0f1117"
 SIDEBAR_BG     = "#161b22"
 CARD_BG        = "#1c2128"
@@ -57,12 +44,7 @@ def _set_icon(window):
             pass
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-#  AUTH WINDOW  (login + first-run setup, shown before main app)
-# ═══════════════════════════════════════════════════════════════════════════════
 class AuthWindow(ctk.CTk):
-    """Standalone login / account-setup window."""
-
     def __init__(self):
         super().__init__()
         self.title("Library Register — Login")
@@ -79,7 +61,6 @@ class AuthWindow(ctk.CTk):
         self.authenticated = False
         self._failed_attempts = 0
 
-        # Set icon after window is fully initialised (required on Windows)
         self.after(200, lambda: _set_icon(self))
 
         if is_first_run():
@@ -87,7 +68,6 @@ class AuthWindow(ctk.CTk):
         else:
             self._build_login_ui()
 
-    # ── First-run setup ───────────────────────────────────────────────────────
     def _build_setup_ui(self):
         self._clear()
         card = self._center_card(460)
@@ -100,8 +80,8 @@ class AuthWindow(ctk.CTk):
                      font=ctk.CTkFont(size=12), text_color=TEXT_SECONDARY,
                      wraplength=320).pack(pady=(0, 20))
 
-        self._user_entry = self._field(card, "Username")
-        self._pass_entry = self._field(card, "Password", show="●")
+        self._user_entry  = self._field(card, "Username")
+        self._pass_entry  = self._field(card, "Password", show="●")
         self._pass2_entry = self._field(card, "Confirm Password", show="●")
 
         self._err_label = ctk.CTkLabel(card, text="", font=ctk.CTkFont(size=12),
@@ -134,7 +114,6 @@ class AuthWindow(ctk.CTk):
         self._err_label.configure(text="")
         self._build_login_ui(welcome=True)
 
-    # ── Login ─────────────────────────────────────────────────────────────────
     def _build_login_ui(self, welcome=False):
         self._clear()
         card = self._center_card(420)
@@ -184,7 +163,6 @@ class AuthWindow(ctk.CTk):
                 self._err_label.configure(text="Too many failed attempts.")
                 self.after(1500, self.destroy)
 
-    # ── Helpers ───────────────────────────────────────────────────────────────
     def _clear(self):
         for w in self.winfo_children():
             w.destroy()
@@ -213,9 +191,6 @@ class AuthWindow(ctk.CTk):
         return entry
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-#  MAIN APPLICATION
-# ═══════════════════════════════════════════════════════════════════════════════
 class LibraryApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -237,9 +212,6 @@ class LibraryApp(ctk.CTk):
         self._build_content_area()
         self._show_issue_page()
 
-    # ─────────────────────────────────────────────────────────────────────────
-    #  SIDEBAR
-    # ─────────────────────────────────────────────────────────────────────────
     def _build_sidebar(self):
         self.sidebar = ctk.CTkFrame(self, width=230, corner_radius=0, fg_color=SIDEBAR_BG)
         self.sidebar.grid(row=0, column=0, sticky="nsew")
@@ -264,7 +236,6 @@ class LibraryApp(ctk.CTk):
 
         ctk.CTkFrame(self.sidebar, fg_color="transparent").pack(fill="both", expand=True)
 
-        # User info + change password button at bottom
         user_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         user_frame.pack(fill="x", padx=16, pady=(0, 6))
 
@@ -299,9 +270,6 @@ class LibraryApp(ctk.CTk):
             else:
                 btn.configure(fg_color="transparent", text_color=TEXT_SECONDARY, hover_color=CARD_BG)
 
-    # ─────────────────────────────────────────────────────────────────────────
-    #  CONTENT AREA
-    # ─────────────────────────────────────────────────────────────────────────
     def _build_content_area(self):
         self.content = ctk.CTkFrame(self, fg_color=BG_DARK, corner_radius=0)
         self.content.grid(row=0, column=1, sticky="nsew")
@@ -312,9 +280,6 @@ class LibraryApp(ctk.CTk):
         for w in self.content.winfo_children():
             w.destroy()
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    #  PAGE: ISSUE BOOK
-    # ═══════════════════════════════════════════════════════════════════════════
     def _show_issue_page(self):
         self._set_active_nav("issue")
         self._clear_content()
@@ -384,7 +349,6 @@ class LibraryApp(ctk.CTk):
                 self._toast("Contact number must be a valid number.", DANGER)
                 return
 
-            # ── Duplicate check ───────────────────────────────────────────────
             try:
                 duplicates = get_duplicate_records(name, mob)
             except Exception as e:
@@ -425,9 +389,6 @@ class LibraryApp(ctk.CTk):
                       font=ctk.CTkFont(size=14, weight="bold"),
                       command=submit).pack(side="right")
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    #  PAGE: VIEW REGISTER
-    # ═══════════════════════════════════════════════════════════════════════════
     def _show_register_page(self):
         self._set_active_nav("register")
         self._clear_content()
@@ -473,7 +434,7 @@ class LibraryApp(ctk.CTk):
         query = self.search_var.get().strip().lower() if hasattr(self, "search_var") else ""
 
         if query:
-            rows = [r for r in rows if query in r[0].lower() or query in r[1].lower()]
+            rows = [r for r in rows if query in r[1].lower() or query in r[2].lower()]
 
         if not rows:
             empty = ctk.CTkFrame(self.scroll, fg_color="transparent")
@@ -488,7 +449,6 @@ class LibraryApp(ctk.CTk):
                          font=ctk.CTkFont(size=13), text_color=TEXT_SECONDARY).pack()
             return
 
-        # ── Overdue banner ────────────────────────────────────────────────────
         overdue_list = get_overdue_records()
         if overdue_list:
             banner = ctk.CTkFrame(self.scroll, fg_color=WARNING_BG, corner_radius=10,
@@ -507,7 +467,6 @@ class LibraryApp(ctk.CTk):
                          font=ctk.CTkFont(size=12), text_color=TEXT_SECONDARY).pack(
                              side="left", padx=(10, 0))
 
-        # ── Column header ─────────────────────────────────────────────────────
         header = ctk.CTkFrame(self.scroll, fg_color=SIDEBAR_BG,
                               corner_radius=10, height=40)
         header.pack(fill="x", pady=(0, 6))
@@ -525,18 +484,18 @@ class LibraryApp(ctk.CTk):
                          text_color=TEXT_SECONDARY,
                          width=int(w * 700)).pack(side="left", padx=2)
 
-        for bname, name, mob, doi, dor, rm in rows:
-            self._record_card(bname, name, mob, doi, dor, rm)
+        for row_id, bname, name, mob, doi, dor, rm in rows:
+            self._record_card(row_id, bname, name, mob, doi, dor, rm)
 
         ctk.CTkLabel(self.scroll,
                      text=f"  {len(rows)} record{'s' if len(rows) != 1 else ''} found",
                      font=ctk.CTkFont(size=12), text_color=TEXT_SECONDARY).pack(
                          anchor="w", pady=(8, 0))
 
-    def _record_card(self, bname, name, mob, doi, dor, rm):
-        overdue       = is_overdue(dor)
-        card_color    = WARNING_BG  if overdue else CARD_BG
-        border_color  = WARNING_BORDER if overdue else BORDER
+    def _record_card(self, row_id, bname, name, mob, doi, dor, rm):
+        overdue      = is_overdue(dor)
+        card_color   = WARNING_BG if overdue else CARD_BG
+        border_color = WARNING_BORDER if overdue else BORDER
 
         card = ctk.CTkFrame(self.scroll, fg_color=card_color, corner_radius=10,
                             border_width=1, border_color=border_color, height=46)
@@ -558,53 +517,29 @@ class LibraryApp(ctk.CTk):
         btn_frame = ctk.CTkFrame(inner, fg_color="transparent")
         btn_frame.pack(side="right")
 
-        # WhatsApp button — only shown for overdue records
         if overdue:
             ctk.CTkButton(
                 btn_frame, text="💬", width=32, height=28, corner_radius=6,
                 fg_color="transparent", hover_color="#1a3d1a",
                 text_color=SUCCESS, font=ctk.CTkFont(size=14),
-                command=lambda n=name: self._open_whatsapp_dialog(n)
+                command=lambda i=row_id: self._open_whatsapp_dialog(i)
             ).pack(side="left", padx=2)
 
         ctk.CTkButton(
             btn_frame, text="✎", width=32, height=28, corner_radius=6,
             fg_color="transparent", hover_color=ENTRY_BG,
             text_color=ACCENT, font=ctk.CTkFont(size=15),
-            command=lambda n=name: self._open_edit_dialog(n)
+            command=lambda i=row_id: self._open_edit_dialog(i)
         ).pack(side="left", padx=2)
 
         ctk.CTkButton(
             btn_frame, text="🗑", width=32, height=28, corner_radius=6,
             fg_color="transparent", hover_color="#3d1f1f",
             text_color=DANGER, font=ctk.CTkFont(size=14),
-            command=lambda n=name: self._confirm_delete(n)
+            command=lambda i=row_id: self._confirm_delete(i)
         ).pack(side="left", padx=2)
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    #  DUPLICATE ENTRY POPUP
-    # ═══════════════════════════════════════════════════════════════════════════
     def _show_duplicate_popup(self, duplicates, on_replace, on_add_anyway):
-        """
-        Modal popup shown when a duplicate (name) is detected.
-
-        Parameters
-        ----------
-        duplicates    : list of (id, bname, name, mob, doi, dor, rm) tuples
-        on_replace    : callable(row_id) — delete the chosen row then insert new entry
-        on_add_anyway : callable         — insert new entry without touching old ones
-
-        Flow
-        ----
-        Screen 1 — shows all existing matching entries + 3 buttons.
-          Cancel        -> close popup
-          Replace Entry -> 1 duplicate: replace immediately
-                           >1 duplicates: go to Screen 2 to pick which one
-          Add Anyway    -> insert alongside existing entries
-
-        Screen 2 — only when >1 duplicate exists.
-          Click a card to select it, then confirm to replace only that one.
-        """
         FIELD_LABELS = [
             ("\U0001f4d6  Book Name",      0),
             ("\U0001f464  Borrower Name",  1),
@@ -637,7 +572,6 @@ class LibraryApp(ctk.CTk):
                 w.destroy()
 
         def _make_card():
-            """Return a fresh grid-ready card inside the container."""
             card = ctk.CTkFrame(container, fg_color=CARD_BG, corner_radius=16,
                                 border_width=1, border_color=WARNING_BORDER)
             card.pack(fill="both", expand=True, padx=20, pady=20)
@@ -646,7 +580,6 @@ class LibraryApp(ctk.CTk):
             return card
 
         def _entry_block(parent, idx, row_data, show_select_hint=False):
-            """Render one existing-entry card inside a scrollable parent."""
             row_id, bname, name, mob, doi, dor, rm = row_data
             values = [bname, name, str(mob), doi, dor, rm or "\u2014"]
 
@@ -681,9 +614,6 @@ class LibraryApp(ctk.CTk):
 
             return ef, inner, hdr
 
-        # ─────────────────────────────────────────────────────────────────────
-        #  SCREEN 1
-        # ─────────────────────────────────────────────────────────────────────
         def _show_screen1():
             _clear_container()
             card = _make_card()
@@ -743,9 +673,6 @@ class LibraryApp(ctk.CTk):
                           command=lambda: (popup.destroy(), on_add_anyway())
                           ).pack(side="right")
 
-        # ─────────────────────────────────────────────────────────────────────
-        #  SCREEN 2 — pick which entry to replace
-        # ─────────────────────────────────────────────────────────────────────
         def _show_screen2():
             _clear_container()
             card = _make_card()
@@ -768,7 +695,7 @@ class LibraryApp(ctk.CTk):
                                             scrollbar_button_hover_color=TEXT_SECONDARY)
             scroll.grid(row=2, column=0, sticky="nsew", padx=16, pady=(10, 0))
 
-            selected_id = ctk.IntVar(value=-1)
+            selected_id  = ctk.IntVar(value=-1)
             entry_frames = {}
 
             def _select(row_id):
@@ -836,17 +763,14 @@ class LibraryApp(ctk.CTk):
 
         _show_screen1()
 
-        #  WHATSAPP REMINDER DIALOG
-    # ═══════════════════════════════════════════════════════════════════════════
-    def _open_whatsapp_dialog(self, borrower_name):
-        rec = get_record(borrower_name)
+    def _open_whatsapp_dialog(self, row_id):
+        rec = get_record_by_id(row_id)
         if not rec:
             self._toast("Record not found.", DANGER)
             return
 
-        bname, name, mob, doi, dor, rm = rec
+        _rec_id, bname, name, mob, doi, dor, rm = rec
 
-        # Compute days overdue for default message
         try:
             from Backend import _parse_date
             today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -877,7 +801,6 @@ class LibraryApp(ctk.CTk):
                      font=ctk.CTkFont(size=18, weight="bold"),
                      text_color=TEXT_PRIMARY).pack(anchor="w")
 
-        # Recipient info row
         info_frame = ctk.CTkFrame(inner, fg_color=ENTRY_BG, corner_radius=8)
         info_frame.pack(fill="x", pady=(12, 0))
         info_inner = ctk.CTkFrame(info_frame, fg_color="transparent")
@@ -895,7 +818,6 @@ class LibraryApp(ctk.CTk):
         ctk.CTkLabel(info_inner, text=f"  •  Due: {dor} ({overdue_label})",
                      font=ctk.CTkFont(size=12), text_color=WARNING).pack(side="left")
 
-        # Message editor
         ctk.CTkLabel(inner, text="Message (editable)",
                      font=ctk.CTkFont(size=12, weight="bold"),
                      text_color=TEXT_SECONDARY).pack(anchor="w", pady=(16, 4))
@@ -937,14 +859,12 @@ class LibraryApp(ctk.CTk):
                       font=ctk.CTkFont(size=13, weight="bold"),
                       command=do_send).pack(side="right")
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    #  EDIT DIALOG
-    # ═══════════════════════════════════════════════════════════════════════════
-    def _open_edit_dialog(self, borrower_name):
-        row = get_record(borrower_name)
-        if not row:
+    def _open_edit_dialog(self, row_id):
+        _full_row = get_record_by_id(row_id)
+        if not _full_row:
             self._toast("Record not found.", DANGER)
             return
+        row = list(_full_row[1:])  # strip id → [bname, name, mob, doi, dor, rm]
 
         dialog = ctk.CTkToplevel(self)
         dialog.title("Edit Record")
@@ -953,31 +873,26 @@ class LibraryApp(ctk.CTk):
         dialog.configure(fg_color=BG_DARK)
         dialog.grab_set()
         dialog.focus()
-        # Set icon immediately and again after 200 ms for Windows reliability
         _set_icon(dialog)
         dialog.after(200, lambda: _set_icon(dialog))
 
-        # ── Outer card fills the whole dialog ────────────────────────────────
         card = ctk.CTkFrame(dialog, fg_color=CARD_BG, corner_radius=16,
                             border_width=1, border_color=BORDER)
         card.pack(fill="both", expand=True, padx=24, pady=24)
 
-        # card uses grid: row 0 = header, row 1 = fields (expands), row 2 = buttons (pinned)
         card.grid_rowconfigure(1, weight=1)
         card.grid_columnconfigure(0, weight=1)
 
-        # ── Header (row 0) ────────────────────────────────────────────────────
         header = ctk.CTkFrame(card, fg_color="transparent")
         header.grid(row=0, column=0, sticky="ew", padx=28, pady=(24, 0))
 
         ctk.CTkLabel(header, text="Edit Record",
                      font=ctk.CTkFont(size=20, weight="bold"),
                      text_color=TEXT_PRIMARY).pack(anchor="w")
-        ctk.CTkLabel(header, text=f"Editing record for: {borrower_name}",
+        ctk.CTkLabel(header, text=f"Editing record for: {row[1]}",
                      font=ctk.CTkFont(size=12), text_color=TEXT_SECONDARY).pack(
                          anchor="w", pady=(2, 0))
 
-        # ── Fields area (row 1) ───────────────────────────────────────────────
         fields_frame = ctk.CTkFrame(card, fg_color="transparent")
         fields_frame.grid(row=1, column=0, sticky="nsew", padx=28, pady=(16, 0))
 
@@ -998,7 +913,6 @@ class LibraryApp(ctk.CTk):
                 entry.configure(state="disabled")
             entries[key] = entry
 
-        # ── Button row (row 2) — always pinned to the bottom ──────────────────
         btn_row = ctk.CTkFrame(card, fg_color="transparent")
         btn_row.grid(row=2, column=0, sticky="ew", padx=28, pady=(12, 24))
 
@@ -1018,14 +932,14 @@ class LibraryApp(ctk.CTk):
                 self._toast("Contact must be a valid number.", DANGER)
                 return
             try:
-                update_record(borrower_name,
-                              new_bname=new_bname, new_mob=new_mob or None,
-                              new_doi=new_doi, new_dor=new_dor, new_rm=new_rm)
+                update_record_by_id(row_id,
+                                    new_bname=new_bname, new_mob=new_mob or None,
+                                    new_doi=new_doi, new_dor=new_dor, new_rm=new_rm)
             except Exception as e:
                 self._toast(f"Database error: {e}", DANGER)
                 return
 
-            self._toast(f"Record for {borrower_name} updated ✓", SUCCESS)
+            self._toast(f"Record for {row[1]} updated ✓", SUCCESS)
             dialog.destroy()
             self._render_records()
 
@@ -1041,10 +955,7 @@ class LibraryApp(ctk.CTk):
 
         dialog.bind("<Return>", lambda e: save())
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    #  DELETE CONFIRMATION
-    # ═══════════════════════════════════════════════════════════════════════════
-    def _confirm_delete(self, borrower_name):
+    def _confirm_delete(self, row_id):
         dialog = ctk.CTkToplevel(self)
         dialog.title("Confirm Delete")
         dialog.geometry("400x220")
@@ -1061,11 +972,15 @@ class LibraryApp(ctk.CTk):
         inner = ctk.CTkFrame(card, fg_color="transparent")
         inner.pack(fill="both", expand=True, padx=28, pady=24)
 
+        _del_rec  = get_record_by_id(row_id)
+        _del_name = _del_rec[2] if _del_rec else "this record"
+        _del_book = _del_rec[1] if _del_rec else ""
+
         ctk.CTkLabel(inner, text="⚠️  Delete Record",
                      font=ctk.CTkFont(size=18, weight="bold"),
                      text_color=DANGER).pack(anchor="w")
         ctk.CTkLabel(inner,
-                     text=f"Are you sure you want to remove the record\nfor \"{borrower_name}\"? This cannot be undone.",
+                     text=f"Remove \"{_del_book}\" borrowed by {_del_name}?\nThis cannot be undone.",
                      font=ctk.CTkFont(size=13), text_color=TEXT_SECONDARY,
                      justify="left").pack(anchor="w", pady=(10, 0))
 
@@ -1079,11 +994,11 @@ class LibraryApp(ctk.CTk):
 
         def do_delete():
             try:
-                delete_record(borrower_name)
+                delete_record_by_id(row_id)
             except Exception as e:
                 self._toast(f"Database error: {e}", DANGER)
                 return
-            self._toast(f"Record for {borrower_name} removed.", DANGER)
+            self._toast(f"Record for {_del_name} removed.", DANGER)
             dialog.destroy()
             self._render_records()
 
@@ -1092,9 +1007,6 @@ class LibraryApp(ctk.CTk):
                       font=ctk.CTkFont(size=13, weight="bold"),
                       command=do_delete).pack(side="right")
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    #  CHANGE PASSWORD DIALOG
-    # ═══════════════════════════════════════════════════════════════════════════
     def _open_change_password(self):
         dialog = ctk.CTkToplevel(self)
         dialog.title("Change Password")
@@ -1172,9 +1084,6 @@ class LibraryApp(ctk.CTk):
 
         dialog.bind("<Return>", lambda e: do_change())
 
-    # ═══════════════════════════════════════════════════════════════════════════
-    #  TOAST NOTIFICATION
-    # ═══════════════════════════════════════════════════════════════════════════
     def _toast(self, message, colour=ACCENT):
         toast = ctk.CTkFrame(self, fg_color=colour, corner_radius=10, height=42)
         toast.place(relx=0.5, rely=1.0, anchor="s", y=-20)
@@ -1192,13 +1101,11 @@ class LibraryApp(ctk.CTk):
         self.after(2800, remove)
 
 
-# ─── Entry Point ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    # Step 1: Show login / setup window
     auth = AuthWindow()
     auth.mainloop()
 
-    # Step 2: Only launch main app if login succeeded
     if auth.authenticated:
         app = LibraryApp()
         app.mainloop()
+
